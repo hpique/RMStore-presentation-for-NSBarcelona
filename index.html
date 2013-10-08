@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>RMStore</title>
+
+		<meta name="description" content="A lightweight iOS library for In-App Purchases">
+		<meta name="author" content="Hermes Pique">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="reveal.js/css/reveal.min.css">
+		<link rel="stylesheet" href="reveal.js/css/theme/sky.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="reveal.js/lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="reveal.js/css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		<style type="text/css">
+			.reveal h1, 
+			.reveal h2,
+			.reveal h3 {
+				text-transform: none;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h1>RMStore</h1>
+					<h3>A lightweight iOS library for In-App Purchases</h3>
+					<p>
+						<small><a href="http://twitter.com/hpique">@hpique</a></small>
+					</p>
+				</section>
+					<section>
+						<h2>What's the problem with StoreKit?</h2>
+					</section>
+					<section>
+						<h2>StoreKit uses delegates</h2>
+						<p>A <strong>single</strong> object is notified of the result of each request.</p>
+						<pre><code class="language-objectivec" data-trim>
+- (void)requestProducts
+{
+	NSSet *products = [NSSet setWithArray:@[@"fabulousIdol", @"rootBeer", @"rubberChicken"]];
+    _request = [[SKProductsRequest alloc] initWithProductIdentifiers:
+            [NSSet setWithObject:products]];
+    _request.delegate = self;
+    [_request start];
+}
+
+- (void)productsRequest:(SKProductsRequest *)request 
+     didReceiveResponse:(SKProductsResponse *)response
+{
+    NSLog(@"Products loaded", @"");
+    _request = nil;
+}
+
+- (void)request:(SKRequest *)request didFailWithError:(NSError *)error
+{
+    NSLog(@"Something went wrong", @"");
+    _request = nil;
+}
+						</code></pre>
+					</section>
+					<section>
+						<h2>Yet In-App Purchase logic has <strong>many</strong> stakeholders</h2>
+					</section>
+					<section>
+						<h2>RMStore adds <strong>blocks</strong> and <strong>notifications</strong> to StoreKit</h2>
+						<p>Making your code more contextual and reducing coupling.</p>
+						<pre><code class="language-objectivec" data-trim>
+NSSet *products = [NSSet setWithArray:@[@"fabulousIdol", @"rootBeer", @"rubberChicken"]];
+[[RMStore defaultStore] requestProducts:products
+success:^(NSArray *products, NSArray *invalidProductIdentifiers) {
+    NSLog(@"Products loaded", @"");
+} failure:^(NSError *error) {
+    NSLog(@"Something went wrong", @"");
+}];
+						</code></pre>
+					</section>
+				<section>
+					<h2>Features</h2>
+					<ul>
+						<li>StoreKit with blocks and notifications</li>
+						<li class="fragment">Receipt verification (optional)</li>
+						<li class="fragment">Purchase management</li>
+					</ul>
+				</section>
+				<section>
+					<h2>RMStore <strong>meta</strong>-features</h2>
+					<ul>
+						<li class="fragment">One class</li>
+						<li class="fragment">No external dependencies</li>
+						<li class="fragment">Well documented</li>
+						<li class="fragment">Demo project</li>
+						<li class="fragment">Unit tests with 100% code coverage</li>
+						<li class="fragment">CocoaPods support</li>
+						<li class="fragment">Continuos integration</li>
+					</ul>
+				</section>
+				<section>
+					<h2>StoreKit with blocks</h2>
+					<p>RMStore adds blocks to all asynchronous StoreKit operations.</p>
+				</section>
+				<section>
+					<h2>Products request</h2>
+					<pre><code class="language-objectivec" data-trim>
+NSSet *products = [NSSet setWithArray:@[@"fabulousIdol", @"rootBeer", @"rubberChicken"]];
+[[RMStore defaultStore] requestProducts:products
+success:^(NSArray *products, NSArray *invalidProductIdentifiers) {
+    NSLog(@"Products loaded", @"");
+} failure:^(NSError *error) {
+    NSLog(@"Something went wrong", @"");
+}];
+					</code></pre>
+				</section>
+				<section>
+					<h2>Add payment</h2>
+					<pre><code class="language-objectivec" data-trim>
+[[RMStore defaultStore] addPayment:@"waxLips" 
+success:^(SKPaymentTransaction *transaction) {
+    NSLog(@"Product purchased", @"");
+} failure:^(SKPaymentTransaction *transaction, NSError *error) {
+    NSLog(@"Something went wrong", @"");
+}];
+					</code></pre>
+				</section>
+				<section>
+					<h2>Restore transactions</h2>
+					<pre><code class="language-objectivec" data-trim>
+[[RMStore defaultStore] restoreTransactionsOnSuccess:^{
+    NSLog(@"Transactions restored", @"");
+} failure:^(NSError *error) {
+    NSLog(@"Something went wrong", @"");
+}];
+					</code></pre>
+				</section>
+				<section>
+					<h2>Notifications</h2>
+					<p>RMStore sends notifications of StoreKit related events and extends <code>NSNotification</code> to provide relevant information.</p>
+				</section>
+				<section>
+					<h2>Adding and removing the observer</h2>
+					<p>To receive notifications, implement the desired methods of the <code>RMStoreObserver</code> protocol and add the observer to RMStore.</p>
+					<pre><code class="language-objectivec" data-trim>
+[[RMStore defaultStore] addStoreObserver:self];
+// ...
+[[RMStore defaultStore] removeStoreObserver:self];
+					</code></pre>
+				</section>
+				<section>
+					<h2>Products request notifications</h2>
+					<pre><code class="language-objectivec" data-trim>
+- (void)storeProductsRequestFailed:(NSNotification*)notification
+{
+    NSError *error = notification.storeError;
+}
+
+- (void)storeProductsRequestFinished:(NSNotification*)notification 
+{
+    NSArray *products = notification.products;
+    NSArray *invalidProductIdentifiers = notification.invalidProductIdentififers;
+}
+					</code></pre>
+				</section>
+				<section>
+					<h2>Payment transaction notifications</h2>
+					<p>Sent after a payment has been requested or for each restored transaction.</p>
+					<pre><code class="language-objectivec" data-trim>
+- (void)storePaymentTransactionFailed:(NSNotification*)notification
+{
+    NSError *error = notification.storeError;
+    NSString *productIdentifier = notification.productIdentifier;
+    SKPaymentTransaction *transaction = notification.transaction;
+}
+
+- (void)storePaymentTransactionFinished:(NSNotification*)notification
+{
+    NSString *productIdentifier = notification.productIdentifier;
+    SKPaymentTransaction *transaction = notification.transaction;
+}
+					</code></pre>
+				</section>
+				<section>
+					<h2>Restore transactions notifications</h2>
+					<pre><code class="language-objectivec" data-trim>
+- (void)storeRestoreTransactionsFailed:(NSNotification*)notification;
+{
+    NSError *error = notification.storeError;
+}
+
+- (void)storeRestoreTransactionsFinished:(NSNotification*)notification { }
+					</code></pre>
+				</section>
+				<section>
+					<h2>Receipt verification</h2>
+					<p>RMStore doesn't perform receipt verification by default.</p>
+					<p class="fragment">You can provide your own custom verification...</p>
+					<p class="fragment">...or use the app-side verification provided by the library.</p>
+				</section>
+				<section>
+					<h2>App-side verification</h2>
+					<p>RMStore provides optional app-side receipt verification via <code>RMStoreLocalReceiptVerificator</code>.</p>
+					<pre><code class="language-objectivec" data-trim>
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    _receiptVerificator = [[RMStoreLocalReceiptVerificator alloc] init]; // Keep a reference to the verificator as the below property is weak
+    [RMStore defaultStore].receiptVerificator = _receiptVerificator;
+    // Your code
+    return YES;
+}
+					</code></pre>
+				</section>
+				<section>
+					<h2>Custom verification</h2>
+					<p>Implement the <code>RMStoreReceiptVerificator</code> protocol:</p>
+					<pre><code class="language-objectivec" data-trim>
+- (void)verifyReceiptOfTransaction:(SKPaymentTransaction*)transaction
+                           success:(void (^)())successBlock
+                           failure:(void (^)(NSError *error))failureBlock;
+					</code></pre>
+					<p>You will also need to set the <code>receiptVerificator</code> delegate at startup, as indicated before.
+</p>
+				</section>
+				<section>
+					<h2>Purchase management</h2>
+					<p>RMStore stores transactions in <code>NSUserDefaults</code> with weak obfuscation. It also offers various methods to query and manage purchases.</p>
+				</section>
+				<section>
+					<h2>Working with non-consumables</h2>
+					<p>Non-consumables can only be purchased once. To know if a non-consumable has been purchased:
+</p>
+					<pre><code class="language-objectivec" data-trim>
+BOOL purchased = [[RMStore defaultStore] isPurchasedForIdentifier:@"fabulousIdol"];
+					</code></pre>
+				</section>
+				<section>
+					<h2>Working with consumables</h2>
+					<p>Consumables can be purchased more than once and tipically will be consumed at most once per purchase. Normally you would:
+</p>
+					<pre><code class="language-objectivec" data-trim>
+NSInteger purchaseCount = [[RMStore defaultStore] countPurchasesForIdentifier:@"banana"];
+if (purchaseCount > 0)
+{
+    BOOL success = [[RMStore defaultStore] consumeProductForIdentifier:@"banana"];
+}					</code></pre>
+				</section>
+				<section>
+					<h2>Obfuscation</h2>
+					<p>By default RMStore stores transactions in <code>NSUserDefaults</code> as objects using <code>NSCoding</code>, as a form of weak obfuscation.</p>
+				</section>
+				<section>
+					<h2>Custom obfuscation</h2>
+					<p>Implement the <code>RMStoreTransactionObfuscator</code> protocol and set the <code>transactionObfuscator</code> delegate at startup.</p>
+					<pre><code class="language-objectivec" data-trim>
+- (NSData*)dataWithTransaction:(RMStoreTransaction*)transaction;
+
+- (RMStoreTransaction*)transactionWithData:(NSData*)data;
+					</code></pre>					
+					<p>You will be obfuscating <code>RMStoreTransaction</code> instances, an analogue of <code>SKPaymentTransaction</code> which supports <code>NSCopying</code>, unlike the original.</p>
+				</section>
+				<section>
+					<h2>Current status</h2>
+					<p>RMStore is in version 0.3.</p>
+					<p class="fragment">It works but its interface might change.</p>					
+				</section>
+				<section>
+					<h2>Roadmap to version 1.0</h2>
+				</section>
+				<section>
+					<h2>iOS 7 StoreKit API changes</h2>
+					<p>Ongoing work in branch <a href="https://github.com/robotmedia/RMStore/tree/ios7">ios7</a>.</p>
+					<ul>
+						<li class="fragment">Support <code>applicationUsername</code> in <code>addPayment</code> and <code>restoreTransactions</code></li>
+						<li class="fragment">Refresh receipt with blocks and notications</li>
+						<li class="fragment">Verify the app receipt</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Make purchase management optional</h2>
+					<p>And allow you to choose how to store purchases (e.g., keychain).</p>
+				</section>
+				<section>
+					<h2>Plus</h2>
+					<ul>
+						<li class="fragment">OS X target and demo project</li>
+						<li class="fragment">Convenience methods for subscriptions</li>
+						<li class="fragment">Support content downloads</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Questions?</h2>
+				</section>
+			</div>
+		</div>
+
+		<script src="reveal.js/lib/js/head.min.js"></script>
+		<script src="reveal.js/js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+			    width: 1024,
+    			height: 768,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
